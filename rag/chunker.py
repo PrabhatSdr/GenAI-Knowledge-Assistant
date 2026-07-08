@@ -1,14 +1,15 @@
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 
-def split_into_chunks(text: str):
-    if not text or not text.strip():
-        return []
+class TextChunker:
 
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200,
-        separators=["\n\n", "\n", ". ", " ", ""]
-    )
+    def __init__(self):
 
-    return splitter.create_documents([text])
+        self.splitter = RecursiveCharacterTextSplitter(
+            chunk_size=800,
+            chunk_overlap=150
+        )
+
+    def chunk_text(self, text):
+
+        return self.splitter.split_text(text)

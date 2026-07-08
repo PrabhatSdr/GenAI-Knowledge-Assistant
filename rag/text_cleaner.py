@@ -1,23 +1,10 @@
 import re
 
 
-def clean_text(text: str) -> str:
-    """
-    Cleans extracted document text.
+class TextCleaner:
 
-    Steps:
-    1. Remove extra spaces
-    2. Remove multiple blank lines
-    3. Normalize whitespace
-    """
+    def clean(self, text: str) -> str:
 
-    # Remove multiple spaces
-    text = re.sub(r"[ \t]+", " ", text)
+        text = re.sub(r"\s+", " ", text)
 
-    # Remove excessive blank lines
-    text = re.sub(r"\n{3,}", "\n\n", text)
-
-    # Remove leading/trailing whitespace
-    text = text.strip()
-
-    return text
+        return text.strip()

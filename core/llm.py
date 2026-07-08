@@ -1,23 +1,24 @@
-import ollama
+import requests
+
+from config.settings import settings
 
 
-def ask_llm(prompt: str, model: str = "llama3.2:3b") -> str:
-    try:
-        response = ollama.chat(
-            model=model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a helpful AI assistant for academic research and learning."
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ]
+class LLMService:
+
+    def __init__(self):
+        self.base_url = "http://localhost:11434/api/generate"
+
+    def generate(self, prompt: str):
+
+        response = requests.post(
+            self.base_url,
+            json={
+                "model": settings.OLLAMA_MODEL,
+                "prompt": prompt,
+                "stream": False
+            }
         )
 
-        return response["message"]["content"]
+        response.raise_for_status()
 
-    except Exception as e:
-        return f"LLM Error: {str(e)}"
+        return response.json()["response"]

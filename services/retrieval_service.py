@@ -1,33 +1,31 @@
 from services.embedding_service import EmbeddingService
-from rag.vector_store import VectorStore
+from core.database import vector_store
 
 
 class RetrievalService:
 
     def __init__(self):
         self.embedding_service = EmbeddingService()
-        self.vector_store = VectorStore()
 
-    def retrieve(self, query: str, limit: int = 3):
+    def retrieve(self, query, top_k=5):
 
-        # Convert question into embedding
-        query_embedding = self.embedding_service.embed_text(query)
+        query_embedding = self.embedding_service.embed_query(query)
 
-        # Search Qdrant
-        results = self.vector_store.client.query_points(
-            collection_name=self.vector_store.COLLECTION_NAME,
-            query=query_embedding,
-            limit=limit
-        ).points
+        results = vector_store.search(
+            query_embedding,
+            limit=top_k
+        )
 
-        retrieved_chunks = []
+        retrieved = []
 
-        for result in results:
-            retrieved_chunks.append({
-                "score": result.score,
-                "text": result.payload["text"],
-                "filename": result.payload["filename"],
-                "chunk_id": result.payload["chunk_id"]
-            })
+        for point in results:
+            retrieved.append(
+                {
+                    "text": point.payload["text"],
+                    "filename": point.payload["filename"],
+                    "chunk_id": point.payload["chunk_id"],
+                    "score": point.score,
+                }
+            )
 
-        return retrieved_chunks
+        return retrieved

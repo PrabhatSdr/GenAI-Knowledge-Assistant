@@ -1,50 +1,47 @@
 import os
+import shutil
 import uuid
-from fastapi import APIRouter, UploadFile, File, HTTPException
 
-from rag.document_loader import extract_text_from_pdf
-from rag.text_cleaner import clean_text
-from rag.chunker import split_into_chunks
+from fastapi import APIRouter, UploadFile, File
+
+from config.settings import settings
+from services.ingestion_service import IngestionService
 
 router = APIRouter()
 
-UPLOAD_DIR = "uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+ingestion_service = IngestionService()
 
 
-@router.post("/upload/pdf")
+@router.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
-    try:
-        if not file.filename.lower().endswith(".pdf"):
-            raise HTTPException(status_code=400, detail="Only PDF files are allowed.")
 
-        file_id = str(uuid.uuid4())
-        safe_filename = file.filename.replace(" ", "_")
-        file_path = os.path.join(UPLOAD_DIR, f"{file_id}_{safe_filename}")
-
-        content = await file.read()
-
-        with open(file_path, "wb") as f:
-            f.write(content)
-
-        extracted_text = extract_text_from_pdf(file_path)
-        cleaned_text = clean_text(extracted_text)
-        chunks = split_into_chunks(cleaned_text)
-
+    # Accept only PDFs
+    if not file.filename.endswith(".pdf"):
         return {
-            "message": "PDF uploaded, cleaned, and chunked successfully.",
-            "file_id": file_id,
-            "filename": file.filename,
-            "characters": len(cleaned_text),
-            "chunks": len(chunks),
-            "preview": chunks[0].page_content if chunks else "No readable text found in this PDF."
+            "error": "Only PDF files are allowed."
         }
 
-    except HTTPException:
-        raise
+    # Create upload directory if needed
+    os.makedirs(settings.UPLOAD_FOLDER, exist_ok=True)
 
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Upload failed: {str(e)}"
-        )
+    # Generate unique filename
+    unique_filename = f"{uuid.uuid4()}.pdf"
+
+    file_path = os.path.join(
+        settings.UPLOAD_FOLDER,
+        unique_filename
+    )
+
+    # Save uploaded file
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    # Automatically ingest the PDF
+    result = ingestion_service.ingest(file_path)
+
+    return {
+        "message": "PDF uploaded and indexed successfully.",
+        "original_filename": file.filename,
+        "stored_filename": unique_filename,
+        "ingestion": result
+    }

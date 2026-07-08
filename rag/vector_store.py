@@ -1,5 +1,10 @@
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams, PointStruct
+from qdrant_client.models import (
+    Distance,
+    VectorParams,
+    PointStruct
+)
+
 import uuid
 
 from config.settings import settings
@@ -19,12 +24,14 @@ class VectorStore:
         print("Connected to Qdrant successfully!")
 
     def create_collection(self):
+        """
+        Create the collection if it does not already exist.
+        """
 
         collections = self.client.get_collections().collections
+        collection_names = [c.name for c in collections]
 
-        names = [collection.name for collection in collections]
-
-        if self.COLLECTION_NAME in names:
+        if self.COLLECTION_NAME in collection_names:
             print("Collection already exists.")
             return
 
@@ -38,35 +45,62 @@ class VectorStore:
 
         print("Collection created successfully!")
 
-    # 👇 ADD THIS NEW METHOD HERE
-    def insert_documents(
-        self,
-        chunks: list[str],
-        embeddings: list[list[float]],
-        filename: str
-    ):
+    def add_documents(self, chunks, embeddings, filename):
+        """
+        Store all document chunks into Qdrant.
+        """
 
         points = []
 
-        for index, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
-            points.append(
-                PointStruct(
-                    id=str(uuid.uuid4()),
-                    vector=embedding,
-                    payload={
-                        "text": chunk,
-                        "filename": filename,
-                        "chunk_id": index
-                    }
-                )
+        for i, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
+
+            point = PointStruct(
+                id=str(uuid.uuid4()),
+                vector=embedding.tolist(),
+                payload={
+                    "text": chunk,
+                    "filename": filename,
+                    "chunk_id": i
+                }
             )
+
+            points.append(point)
 
         self.client.upsert(
             collection_name=self.COLLECTION_NAME,
             points=points
         )
 
-        print(f"{len(points)} chunks stored successfully.")
+        print(f"{len(points)} chunks stored successfully!")
+
+    def search(self, query_embedding, limit=5):
+        """
+        Retrieve the most similar chunks.
+        """
+
+        results = self.client.query_points(
+            collection_name=self.COLLECTION_NAME,
+            query=query_embedding.tolist(),
+            limit=limit
+        )
+
+        return results.points
+
+    def delete_collection(self):
+        """
+        Delete the collection.
+        Useful during development.
+        """
+
+        self.client.delete_collection(
+            collection_name=self.COLLECTION_NAME
+        )
+
+        print("Collection deleted successfully!")
 
     def close(self):
+        """
+        Close the Qdrant connection.
+        """
+
         self.client.close()

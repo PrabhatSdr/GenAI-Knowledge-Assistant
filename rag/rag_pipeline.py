@@ -12,19 +12,11 @@ class RAGPipeline:
 
     def ask(self, question):
 
-        # -----------------------------
-        # Save User Message
-        # -----------------------------
-        memory.add_user_message(question)
-
-        # -----------------------------
-        # Retrieve Relevant Chunks
-        # -----------------------------
+        # ----------------------------
+        # Retrieve relevant chunks
+        # ----------------------------
         retrieved_chunks = self.retriever.retrieve(question)
 
-        # -----------------------------
-        # Build Context
-        # -----------------------------
         context = "\n\n".join(
             [
                 chunk["text"]
@@ -32,50 +24,51 @@ class RAGPipeline:
             ]
         )
 
-        # -----------------------------
-        # Build Conversation History
-        # -----------------------------
-        history = "\n".join(
-            [
-                f"{msg['role']}: {msg['content']}"
-                for msg in memory.get_history()
-            ]
-        )
+        # ----------------------------
+        # Get conversation history
+        # ----------------------------
+        conversation = memory.get_history()
 
-        # -----------------------------
-        # Build Prompt
-        # -----------------------------
+        # ----------------------------
+        # Create prompt
+        # ----------------------------
         prompt = SYSTEM_PROMPT.format(
+            conversation=conversation,
             context=context,
-            history=history,
             question=question
         )
 
-        # -----------------------------
-        # Generate Answer
-        # -----------------------------
+        # ----------------------------
+        # Generate answer
+        # ----------------------------
         answer = self.llm.generate(prompt)
 
-        # -----------------------------
-        # Save AI Response
-        # -----------------------------
-        memory.add_ai_message(answer)
+        # ----------------------------
+        # Save conversation
+        # ----------------------------
+        memory.add_message("user", question)
 
-        # -----------------------------
-        # Print Conversation Memory
-        # -----------------------------
-        print("\n========== Conversation Memory ==========")
+        memory.add_message("assistant", answer)
 
-        for msg in memory.get_history():
-            print(f"{msg['role']}: {msg['content']}")
+        # ----------------------------
+        # Build citations
+        # ----------------------------
+        citations = []
 
-        print("=========================================\n")
+        for chunk in retrieved_chunks:
 
-        # -----------------------------
-        # Return Response
-        # -----------------------------
+            citations.append(
+                f"{chunk['filename']} (Chunk {chunk['chunk_id']})"
+            )
+
+        # Remove duplicates
+        citations = list(dict.fromkeys(citations))
+
         return {
             "answer": answer,
+
+            "citations": citations,
+
             "sources": [
                 {
                     "filename": chunk["filename"],

@@ -12,13 +12,14 @@ class RetrievalService:
         query_embedding = self.embedding_service.embed_query(query)
 
         results = vector_store.search(
-            query_embedding,
+            query_embedding=query_embedding,
             limit=top_k
         )
 
         retrieved = []
 
         for point in results:
+
             retrieved.append(
                 {
                     "text": point.payload["text"],

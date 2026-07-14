@@ -1,8 +1,11 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
+
 from rag.rag_pipeline import RAGPipeline
 
 router = APIRouter()
+
+pipeline = RAGPipeline()
 
 
 class ChatRequest(BaseModel):
@@ -10,8 +13,11 @@ class ChatRequest(BaseModel):
 
 
 @router.post("/chat")
-def chat(request: ChatRequest):
+def chat(request: ChatRequest, chat_id: str = "default"):
 
-    pipeline = RAGPipeline()
+    response = pipeline.ask(
+        question=request.question,
+        chat_id=chat_id
+    )
 
-    return pipeline.ask(request.question)
+    return response

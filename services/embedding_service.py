@@ -22,6 +22,12 @@ class EmbeddingService:
 
         return embedding.tolist()
 
+    def embed_query(self, query: str):
+        """
+        Generate embedding for a search query.
+        """
+        return self.embed_text(query)
+
     def embed_documents(self, documents: list[str]):
         embeddings = self.model.encode(
             documents,

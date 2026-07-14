@@ -56,7 +56,7 @@ class VectorStore:
 
             point = PointStruct(
                 id=str(uuid.uuid4()),
-                vector=embedding.tolist(),
+                vector=embedding,
                 payload={
                     "text": chunk,
                     "filename": filename,
@@ -80,7 +80,7 @@ class VectorStore:
 
         results = self.client.query_points(
             collection_name=self.COLLECTION_NAME,
-            query=query_embedding.tolist(),
+            query=query_embedding,
             limit=limit
         )
 

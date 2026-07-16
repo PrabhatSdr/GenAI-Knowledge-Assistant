@@ -10,65 +10,70 @@ class RAGPipeline:
         self.retriever = RetrievalService()
         self.llm = LLMService()
 
-    def ask(self, question):
+    def ask(self, question: str, chat_id: str = "default"):
 
-        # ----------------------------
-        # Retrieve relevant chunks
-        # ----------------------------
+        # -------------------------
+        # Load previous history
+        # -------------------------
+
+        history = memory.get_history(chat_id)
+
+        history_text = ""
+
+        for message in history:
+            history_text += (
+                f"{message['role']}: {message['content']}\n"
+            )
+
+        # -------------------------
+        # Retrieve documents
+        # -------------------------
+
         retrieved_chunks = self.retriever.retrieve(question)
 
         context = "\n\n".join(
-            [
-                chunk["text"]
-                for chunk in retrieved_chunks
-            ]
+            chunk["text"] for chunk in retrieved_chunks
         )
 
-        # ----------------------------
-        # Get conversation history
-        # ----------------------------
-        conversation = memory.get_history()
+        # -------------------------
+        # Build prompt
+        # -------------------------
 
-        # ----------------------------
-        # Create prompt
-        # ----------------------------
-        prompt = SYSTEM_PROMPT.format(
-            conversation=conversation,
-            context=context,
-            question=question
-        )
+        prompt = f"""
+Previous Conversation:
 
-        # ----------------------------
+{history_text}
+
+Knowledge Base:
+
+{context}
+
+User Question:
+
+{question}
+
+Answer naturally.
+"""
+
+        # -------------------------
         # Generate answer
-        # ----------------------------
+        # -------------------------
+
         answer = self.llm.generate(prompt)
 
-        # ----------------------------
+        # -------------------------
         # Save conversation
-        # ----------------------------
-        memory.add_message("user", question)
+        # -------------------------
 
-        memory.add_message("assistant", answer)
+        memory.add(chat_id, "user", question)
+        memory.add(chat_id, "assistant", answer)
 
-        # ----------------------------
-        # Build citations
-        # ----------------------------
-        citations = []
-
-        for chunk in retrieved_chunks:
-
-            citations.append(
-                f"{chunk['filename']} (Chunk {chunk['chunk_id']})"
-            )
-
-        # Remove duplicates
-        citations = list(dict.fromkeys(citations))
+        # -------------------------
+        # Return response
+        # -------------------------
 
         return {
             "answer": answer,
-
-            "citations": citations,
-
             "sources": [
                 {
                     "filename": chunk["filename"],

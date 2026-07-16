@@ -1,21 +1,18 @@
-import os
 import json
+import os
 
 
 class Memory:
 
     def __init__(self):
-
         self.memory_folder = "memory"
-
         os.makedirs(self.memory_folder, exist_ok=True)
 
     # -----------------------------------
     # Get file path
     # -----------------------------------
 
-    def _get_file_path(self, chat_id):
-
+    def _get_file(self, chat_id: str):
         return os.path.join(
             self.memory_folder,
             f"{chat_id}.json"
@@ -25,39 +22,23 @@ class Memory:
     # Load history
     # -----------------------------------
 
-    def load(self, chat_id):
+    def get_history(self, chat_id: str):
 
-        file_path = self._get_file_path(chat_id)
+        file = self._get_file(chat_id)
 
-        if not os.path.exists(file_path):
+        if not os.path.exists(file):
             return []
 
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file, "r", encoding="utf-8") as f:
             return json.load(f)
 
     # -----------------------------------
-    # Save history
-    # -----------------------------------
-
-    def save(self, chat_id, history):
-
-        file_path = self._get_file_path(chat_id)
-
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(
-                history,
-                f,
-                indent=4,
-                ensure_ascii=False
-            )
-
-    # -----------------------------------
-    # Add message
+    # Save one message
     # -----------------------------------
 
     def add(self, chat_id, role, content):
 
-        history = self.load(chat_id)
+        history = self.get_history(chat_id)
 
         history.append(
             {
@@ -66,41 +47,64 @@ class Memory:
             }
         )
 
-        self.save(chat_id, history)
+        with open(
+            self._get_file(chat_id),
+            "w",
+            encoding="utf-8"
+        ) as f:
+            json.dump(
+                history,
+                f,
+                indent=4,
+                ensure_ascii=False
+            )
 
     # -----------------------------------
-    # Return history
-    # -----------------------------------
-
-    def get_history(self, chat_id):
-
-        return self.load(chat_id)
-
-    # -----------------------------------
-    # Clear history
-    # -----------------------------------
-
-    def clear(self, chat_id):
-
-        file_path = self._get_file_path(chat_id)
-
-        if os.path.exists(file_path):
-            os.remove(file_path)
-
-    # -----------------------------------
-    # List chats
+    # List every chat
     # -----------------------------------
 
     def list_chats(self):
 
         chats = []
 
-        for file in os.listdir(self.memory_folder):
+        for filename in os.listdir(self.memory_folder):
 
-            if file.endswith(".json"):
-                chats.append(file.replace(".json", ""))
+            if filename.endswith(".json"):
+
+                chat_id = filename.replace(".json", "")
+
+                history = self.get_history(chat_id)
+
+                chats.append(
+                    {
+                        "chat_id": chat_id,
+                        "messages": len(history)
+                    }
+                )
 
         return chats
+
+    # -----------------------------------
+    # Load one chat
+    # -----------------------------------
+
+    def load_chat(self, chat_id):
+
+        return self.get_history(chat_id)
+
+    # -----------------------------------
+    # Delete one chat
+    # -----------------------------------
+
+    def delete_chat(self, chat_id):
+
+        file = self._get_file(chat_id)
+
+        if os.path.exists(file):
+            os.remove(file)
+            return True
+
+        return False
 
 
 memory = Memory()

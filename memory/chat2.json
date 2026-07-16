@@ -1,0 +1,10 @@
+[
+    {
+        "role": "user",
+        "content": "what is DSA?"
+    },
+    {
+        "role": "assistant",
+        "content": "DSA stands for Dot-Scaled Attention. It is a variation of the dot product attention mechanism where the dot products are scaled by 1/√dk, the square root of the dimension of the queries and keys. This scaling helps to mitigate the problem of extreme gradients in the softmax function for large values of dk."
+    }
+]

@@ -2,7 +2,10 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import (
     Distance,
     VectorParams,
-    PointStruct
+    PointStruct,
+    Filter,
+    FieldCondition,
+    MatchValue,
 )
 
 import uuid
@@ -39,15 +42,15 @@ class VectorStore:
             collection_name=self.COLLECTION_NAME,
             vectors_config=VectorParams(
                 size=768,
-                distance=Distance.COSINE
-            )
+                distance=Distance.COSINE,
+            ),
         )
 
         print("Collection created successfully!")
 
     def add_documents(self, chunks, embeddings, filename):
         """
-        Store all document chunks into Qdrant.
+        Store document chunks in Qdrant.
         """
 
         points = []
@@ -60,37 +63,52 @@ class VectorStore:
                 payload={
                     "text": chunk,
                     "filename": filename,
-                    "chunk_id": i
-                }
+                    "chunk_id": i,
+                },
             )
 
             points.append(point)
 
         self.client.upsert(
             collection_name=self.COLLECTION_NAME,
-            points=points
+            points=points,
         )
 
         print(f"{len(points)} chunks stored successfully!")
 
     def search(self, query_embedding, limit=5):
         """
-        Retrieve the most similar chunks.
+        Retrieve similar chunks.
         """
 
         results = self.client.query_points(
             collection_name=self.COLLECTION_NAME,
             query=query_embedding,
-            limit=limit
+            limit=limit,
         )
 
         return results.points
 
+    def delete_document(self, filename):
+        """
+        Delete every vector belonging to a document.
+        """
+
+        self.client.delete(
+            collection_name=self.COLLECTION_NAME,
+            points_selector=Filter(
+                must=[
+                    FieldCondition(
+                        key="filename",
+                        match=MatchValue(value=filename),
+                    )
+                ]
+            ),
+        )
+
+        print(f"Deleted vectors for {filename}")
+
     def delete_collection(self):
-        """
-        Delete the collection.
-        Useful during development.
-        """
 
         self.client.delete_collection(
             collection_name=self.COLLECTION_NAME
@@ -99,8 +117,4 @@ class VectorStore:
         print("Collection deleted successfully!")
 
     def close(self):
-        """
-        Close the Qdrant connection.
-        """
-
         self.client.close()

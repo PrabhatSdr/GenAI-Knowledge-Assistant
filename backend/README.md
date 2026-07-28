@@ -1,1 +1,5 @@
-# Backend placeholder README.md - will be replaced by import
+Backend placeholder README.md
+
+#To run:
+cd backend
+uvicorn main:app --reload

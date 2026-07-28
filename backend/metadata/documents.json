@@ -1,0 +1,20 @@
+[
+    {
+        "filename": "c631fb04-729e-416b-9eb6-9b17bb4c789b.pdf",
+        "original_filename": null,
+        "size_bytes": 301266,
+        "characters": 9673,
+        "chunks": 15,
+        "chat_id": "chat-1785155930951",
+        "uploaded_at": "2026-07-27 18:23:54"
+    },
+    {
+        "filename": "a1f7b5d4-251a-42e0-8b75-cf999f868665.pdf",
+        "original_filename": null,
+        "size_bytes": 2223237,
+        "characters": 39626,
+        "chunks": 61,
+        "chat_id": "default",
+        "uploaded_at": "2026-07-27 18:55:06"
+    }
+]
